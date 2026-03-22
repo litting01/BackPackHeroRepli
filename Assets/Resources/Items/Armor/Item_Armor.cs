@@ -31,15 +31,12 @@ public class Item_Armor : Item, I_ItemEffect
 
     private void OnInstallUpdateEvent(params object[] args)
     {
-        m_NearSlot = GetUI().GetColSlots<Item_Shield>("N", "S", "W", "E");
+        m_NearSlot = GetColSlots<Item_Shield>("N", "S", "W", "E");
             
         foreach(Vector2Int element in m_NearSlot)
         {
             ItemSlot slot = InventoryUI.GetSlot(element);
-            Item_Shield item = slot.Item.Data as Item_Shield;
-            if(null ==  item)
-                continue;
-            ItemEffect[] com = item.GetUI().m_EffectTran.GetComponents<ItemEffect>();
+            ItemEffect[] com = slot.Item.m_EffectTran.GetComponents<ItemEffect>();
             ItemEffect temp = Array.Find(com, (e) =>
             {
                 if(e.m_EffectName == nameof(Item_Armor))
@@ -48,7 +45,7 @@ public class Item_Armor : Item, I_ItemEffect
             });
             if (null == temp)
             {
-                temp = slot.Item.Data.AddItemEffect(InEffect, OutEffect);
+                temp = slot.Item.AddItemEffect(InEffect, OutEffect);
                 temp.m_EffectName = nameof(Item_Armor);
             }
         }
@@ -60,7 +57,7 @@ public class Item_Armor : Item, I_ItemEffect
         Item item = (Item)args[0];
         if (null == item)
             return;
-        item.m_CurrentStatus.Damage += 3;
+        item.m_CurrentStatus.Damage += ArmorCount;
     }
     
     public void OutEffect(params object[] args)
@@ -75,7 +72,7 @@ public class Item_Armor : Item, I_ItemEffect
 
         Debug.Log("Out");
         //없으면 이펙트 삭제
-        item.m_CurrentStatus.Damage -= 3;
+        item.m_CurrentStatus.Damage -= ArmorCount;
         if (true) 
         {
             ItemEffect effect = (ItemEffect)args[1];

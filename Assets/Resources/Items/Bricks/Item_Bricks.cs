@@ -5,6 +5,7 @@ using LogicEvent;
 using Buff;
 using System;
 using DG.Tweening;
+using Unity.VisualScripting;
 
 public class Item_Bricks : Item
 {
@@ -28,16 +29,20 @@ public class Item_Bricks : Item
     
     private void OnInstallEvent(params object[] args)
     {
-        ItemUI ui = GetUI();
-        if (null == ui)
-            return;
         Vector2Int delta = DownMoveItem(m_SlotIndex);
-        if (ui.Data.m_SlotIndex == delta)
+        if (m_SlotIndex == delta)
+        {
+            if (!m_IsInstall)
+            {
+
+            }
             return;
+        }
         ItemSlot slot = InventoryUI.GetSlot(delta);
-        ui.BeginMoveUI();
-        ui.transform.DOMoveY(slot.transform.position.y, 1)
-            .SetEase(Ease.InOutElastic).onComplete = () => slot.InputItem(ui);
+        BeginMoveEvent();
+        transform.DOMoveY(slot.transform.position.y, 1)
+            .SetEase(Ease.InOutElastic).onComplete = () => slot.InputItem(this);
+        EndMoveEvent();
     }
     private Vector2Int DownMoveItem(Vector2Int p_Vec)
     {
@@ -45,10 +50,10 @@ public class Item_Bricks : Item
         if (!InventoryUI.IsInInven(offset))
             return p_Vec;
         ItemSlot slot = InventoryUI.GetSlot(offset);
-        if (null != slot.Item)
+        if (slot.IsInItem)
         {
-            Type t = slot.Item.Data.GetType();
-            if (t == typeof(Item_Bricks))
+            Type t = slot.Item.GetType();
+            if (slot.Item != this && t == typeof(Item_Bricks))
                 return p_Vec;
         }
         return DownMoveItem(offset);

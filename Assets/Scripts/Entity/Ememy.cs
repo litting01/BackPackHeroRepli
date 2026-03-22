@@ -31,7 +31,7 @@ public class Enemy : Entity
         int n = m_UseItemUI.m_UseItemList.Count;
         for (int i = 0; i < n; i++)
         {
-            result = Attack(m_UseItemUI.m_UseItemList.Peek());
+            result = UseItem(m_UseItemUI.m_UseItemList.Peek());
             if (result)
                 m_UseItemUI.m_UseItemList.Peek().ActiveItem();
             m_UseItemUI.RemoveItem();
@@ -50,15 +50,8 @@ public class Enemy : Entity
         {
             int v = UnityEngine.Random.Range(0, Inven.Count);
             EntityEditorInvenItem now = Inven[v];
-            Type t = Type.GetType(now.Data.name);
-            if (t == null)
-            {
-                Debug.Log(name + " 의 아이템 : " + now.Data.name + "의 타입을 가져올수 없음");
-                continue;
-            }
-            Item item = (Item)Activator.CreateInstance(t);
-            item.InitItem(Inven[i], this);
-            m_UseItemUI.AddItem(item);
+   
+            m_UseItemUI.AddItem(now);
         }
     }
 

@@ -106,6 +106,10 @@ namespace LogicEvent
     {
         private Dictionary<string, List<LogicEventBase>> m_Dict = new Dictionary<string, List<LogicEventBase>>();
 
+        public void AddEvent(T p_Type, LogicEventDel p_EventDel)
+        {
+            AddEvent(p_Type, new LogicEventBase(p_EventDel, 0));
+        }
         public void AddEvent(T p_Type, LogicEventBase p_Event)
         {
             if (null == p_Event)

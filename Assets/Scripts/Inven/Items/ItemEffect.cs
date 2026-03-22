@@ -42,7 +42,7 @@ public static class ItemEffectExtensions
         if (null == p_item)
             return null;
         ItemEffect effect = null;
-        effect = p_item.GetUI().m_EffectTran.AddComponent<ItemEffect>();
+        effect = p_item.m_EffectTran.AddComponent<ItemEffect>();
         effect.Init(p_item,OnInitEvent, p_OnReleaseEvent);
         return effect;
     }

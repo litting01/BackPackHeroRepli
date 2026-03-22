@@ -9,17 +9,17 @@ using UnityEngine.UI;
 public class ItemSlot : MonoBehaviour
 {
     public Vector2Int m_SlotIndex;
-    public ItemUI m_ItemUI = null;
-    public ItemUI Item
+    [SerializeField] private Item m_Item = null;
+    public Item Item
     {
-        get { return m_ItemUI; }
-        set { m_ItemUI = value; }
+        get { return m_Item; }
+        set { m_Item = value; }
     }
     public bool IsInItem
     {
         get
         {
-            if (null == m_ItemUI)
+            if (null == m_Item)
                 return false;
             return true;
         }
@@ -33,7 +33,7 @@ public class ItemSlot : MonoBehaviour
     /// 해당 아이템을 슬롯에 넣음
     /// </summary>
     /// <param name="p_Item"></param>
-    public void InputItem(ItemUI p_Item)
+    public void InputItem(Item p_Item)
     {
         if (!p_Item.IsCanInstall())
         {
@@ -42,22 +42,30 @@ public class ItemSlot : MonoBehaviour
         }
         if (IsInItem)
             OutPutItem();
-        p_Item.BeginMoveUI();
+        p_Item.BeginMoveEvent();
         Item = p_Item;
         Item.transform.position = transform.position;
         Item.transform.SetParent(transform);
 
         Item.m_IsInstall = true;
-        Item.Data.m_SlotIndex = m_SlotIndex;
+        Item.m_SlotIndex = m_SlotIndex;
         ChildInputItem();
-        p_Item.EndMoveUI();
+        p_Item.EndMoveEvent();
     }
+    
+    /// <summary>
+    /// 현재 슬롯안에 있는 아이템 밖으로 빼내기
+    /// </summary>
+    /// <param name="p_RanPos"></param>
     public void OutPutItem(bool p_RanPos = true)
     {
-        if (null == m_ItemUI)
+        if (null == m_Item)
             return;
-        Item.Data.EventHandler.Invoke(ItemEventType.OnUnInstallTrigger.ToString());
-        Item.ResetInstall(p_RanPos); 
+        if (m_Item.m_IsInstall)
+        {
+            Item.EventHandler.Invoke(ItemEventType.OnUnInstallTrigger.ToString());
+            Item.ResetInstall(p_RanPos);
+        }
         Item = null;
     }
     /// <summary>
@@ -72,7 +80,7 @@ public class ItemSlot : MonoBehaviour
             ItemSlot slot = InventoryUI.GetSlot(element);
             if (slot.IsInItem)
                 slot.Item.ResetInstall();
-            slot.m_ItemUI = Item;
+            slot.m_Item = Item;
         }
     }
 

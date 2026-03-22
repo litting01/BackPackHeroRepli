@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -27,16 +28,28 @@ public class UseItemListUI : MonoBehaviour
             GameObject.Destroy(transform.GetChild(0).gameObject);
         }
     }
-    public void AddItem(Item item)
+    /// <summary>
+    /// 적들이 쓰는 아이템 생성및 추가
+    /// </summary>
+    /// <param name="p_ItemData"></param>
+    public void AddItem(EntityEditorInvenItem p_ItemData)
     {
-        m_UseItemList.Enqueue(item);
+        Type t = Type.GetType(p_ItemData.Data.name);
+        if (t == null)
+        {
+            Debug.Log(name + " 의 아이템 : " + p_ItemData.Data.name + "의 타입을 가져올수 없음");
+            return;
+        }
         GameObject clone = GameObject.Instantiate(UIPrefap);
+        Item item = (Item)clone.AddComponent(t);
+
+        item.InitItem(p_ItemData.Data, transform.parent.GetComponent<Entity>());
         clone.transform.SetParent(transform);
-        clone.name = item.m_Name;
+        clone.name = item.name;
 
         Image image = clone.GetComponent<Image>();
         image.sprite = item.m_Sprite;
-
+        m_UseItemList.Enqueue(item);
     }
     public void RemoveItem()
     {

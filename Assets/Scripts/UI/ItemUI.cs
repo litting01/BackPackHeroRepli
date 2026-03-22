@@ -2,41 +2,21 @@ using DG.Tweening;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
-using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+/// <summary>
+/// 아이템 정보 표시하는 것만 넣기
+/// </summary>
 public class ItemUI : MonoBehaviour
 {
-    private Item m_Data = null;
-    public Item Data { 
-        get { return m_Data; } 
-        set {
-            if(null == value)
-                Release();
-            else
-                Init(value);
-        }
-    }
 
-    public Image m_image;
-
-    private Transform m_SlotColTran;
-    public Transform m_EffectTran;
-
-    public bool m_IsInstall = false;
+    private Image m_image;
+    private Item m_Item;
 
     private void Update()
     {
-        if (!m_IsInstall)
-            return;
-        //이게 여기있으면 안되는데
-        Data.EventHandler.Invoke(ItemEventType.OnInstallUpdate.ToString());
-        if (Data.IsCanUse())
+        if (m_Item.IsCanUse())
         {
             m_image.color = Color.white;
         }
@@ -45,158 +25,63 @@ public class ItemUI : MonoBehaviour
             m_image.color = Color.gray;
         }
     }
-    private void Init(Item item)
+    public void Init(Item p_Item)
     {
-        m_Data = item;
-        name = item.m_Name;
-        m_image.sprite = item.m_Sprite;
-
-        Vector2Int vec = Data.GetItemSizeStr.GetStrSizeToVec2Int();
-        m_image.transform.localScale = new Vector3(vec.x, vec.y);
-
-        m_SlotColTran = transform.Find("SlotCols");
-        CreateSlotCols();
+        m_Item = p_Item;
+        m_image = GetComponent<Image>();
+        m_image.sprite = p_Item.m_Sprite;
+        m_image.transform.localScale = new Vector3(p_Item.ItemSize.x, p_Item.ItemSize.y);
+        //짝수 오프셋
+        Vector2Int size = p_Item.ItemSize;
+        if (size.x % 2 == 0)
+        {
+            m_image.transform.localPosition += new Vector3(50, 0);
+        }
+        if (size.y % 2 == 0)
+        {
+            m_image.transform.localPosition += new Vector3(0, -50);
+        }
     }
 
     /// <summary>
     /// 풀에 넣기전 기본값으로 변경
     /// </summary>
-    private void Release()
+    public void Release()
     {
-        ResetInstall();
-        int n = m_SlotColTran.childCount;
-        for(int i=n-1; i>=0; i--)
-        {
-            GameObject.Destroy(m_SlotColTran.GetChild(i).gameObject);
-        }
-        m_SlotColTran.localPosition = Vector2.zero;
-
+        ResetUI();
         m_image.transform.localScale = Vector3.one;
         m_image.transform.localPosition = Vector3.zero;
         m_image.sprite = null;
+        m_Item = null;
     }
 
-    private void CreateSlotCols()
+    /// <summary>
+    /// Item정보는 바꾸지않고 리셋
+    /// </summary>
+    /// <param name="p_RanPos"></param>
+    public void ResetUI(bool p_RanPos = true)
     {
-        string[] str = Data.GetItemSizeStr;
-        Vector2Int size = str.GetStrSizeToVec2Int();
-        for(int i=0;i<size.y; i++)
-        {
-            for(int j = 0; j < size.x; j++)
-            {
-                char now = str[i][j];
-                if (now == '0')
-                    continue;
-                GameObject clone = new GameObject();
-                clone.layer = LayerMask.NameToLayer("UI");
-                clone.transform.SetParent(m_SlotColTran, true);
-                clone.transform.localPosition = new Vector3(j * 100, -i * 100);
-                clone.name = $"Col[ {j}_{i} ]";
-
-                ItemUICol item = clone.AddComponent<ItemUICol>();
-                item.m_ParrentUI = this;
-
-                BoxCollider2D col = clone.AddComponent<BoxCollider2D>();
-                col.size = new Vector3(99, 99);
-
-                Image img = clone.AddComponent<Image>();
-                img.color = new Color(0, 0, 0, 0);
-
-            }
-        }
-        Vector2Int vec = Data.GetItemSizeStr.GetStrSizeToVec2Int();
-        m_SlotColTran.localPosition = new Vector3((vec.x - 1) * -50, (vec.y - 1) * 50);
-
-        //짝수 오프셋
-        if(size.x%2 == 0)
-        {
-            m_image.transform.localPosition += new Vector3(50, 0);
-            m_SlotColTran.localPosition += new Vector3(50, 0);
-        }
-        if (size.y % 2 == 0)
-        {
-            m_image.transform.localPosition += new Vector3(0, -50);
-            m_SlotColTran.localPosition += new Vector3(0, -50);
-        }
-    }
-    public void ResetInstall(bool p_RanPos = true)
-    {
-        transform.SetParent(InventoryUI.Current.transform, false);
-        if (p_RanPos)
-        {
-            transform.DOMove(InventoryUI.RanItemPos, 0.5f).SetEase(Ease.OutBack);
-        }
-            
         m_image.color = Color.white;
-
-        if (m_IsInstall)
-        {
-            m_IsInstall = false;
-            foreach (var element in GetColSlots())
-            {
-                ItemSlot slot = InventoryUI.GetSlot(element);
-                slot.ResetSlot();
-            }
-        }
     }
 
+    /// <summary>
+    /// 아이템 인벤내에서 이동시
+    /// </summary>
     public void BeginMoveUI()
     {
         m_image.GetComponent<Canvas>().sortingOrder = (int)UISortingIndex.HoldItemUI;
         m_image.transform.GetChild(0).GetComponent<Canvas>().sortingOrder = (int)UISortingIndex.HoldItemUI - 1;
-        transform.SetParent(InventoryUI.Current.m_ItemTran);
-        if (m_IsInstall)
-        {
-            m_IsInstall = false;
-            List<Vector2Int> list = GetColSlots();
-            foreach (var element in list)
-            {
-                ItemSlot slot = InventoryUI.GetSlot(element);
-                slot.Item = null;
-            }
-        }
     }
+    /// <summary>
+    /// 아이템이 인벤내에서 이동이 끝날때
+    /// </summary>
     public void EndMoveUI()
     {
         m_image.GetComponent<Canvas>().sortingOrder = (int)UISortingIndex.ItemUI;
         m_image.transform.GetChild(0).GetComponent<Canvas>().sortingOrder = (int)UISortingIndex.ItemUIBG;
     }
 
-    public bool IsCanInstall()
-    {
-        bool result = true;
-        if (GetColSlots().Count != m_SlotColTran.childCount)
-            return false;
-        result = Data.IsCanInstall();
-        return result;
-    }
-
-    /// <summary>
-    /// 아이템 사이즈에 닿은 슬롯들
-    /// </summary>
-    public List<Vector2Int> GetColSlots()
-    {
-        List<Vector2Int> list = new List<Vector2Int>();
-        Vector2Int itemPos = Data.m_SlotIndex;
-        ItemSlot temp = null;
-        if(!m_IsInstall)
-            temp = InventoryUI.GetSlot();
-        if (null != temp)
-            itemPos = temp.m_SlotIndex;
-
-        foreach (Vector2Int element in Data.GetItemSizeAboutCenter())
-        {
-            Vector2Int now = element + itemPos;
-            if (!InventoryUI.IsInInven(now))
-                continue;
-            if (list.Contains(now))
-                continue;
-            list.Add(now);
-        }
-        return list;
-    }
-
-    public List<Vector2Int> GetColSlots<T>(params string[] p_Dir) where T : Item
+    /*public List<Vector2Int> GetColSlots<T>(params string[] p_Dir) where T : Item
     {
         List<Vector2Int> vec = GetNearSlot(p_Dir);
         if (vec == null)
@@ -283,5 +168,5 @@ public class ItemUI : MonoBehaviour
             }
         }
         return dataList;
-    }
+    }*/
 }

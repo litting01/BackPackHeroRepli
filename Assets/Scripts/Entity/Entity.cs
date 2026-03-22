@@ -68,7 +68,7 @@ public abstract class Entity : MonoBehaviour
             Debug.Log($"{name}의 목표가 없음");
             return false;
         }
-        Debug.Log($"{name} 이 {m_Target.name} 을 공격");
+        EntityEventHandler.Invoke(LogicEventType.OnE_AttackEvent);
         return true;
     }
 
@@ -77,19 +77,15 @@ public abstract class Entity : MonoBehaviour
     /// </summary>
     /// <param name="item"></param>
     /// <returns></returns>
-    public bool Attack(Item item)
+    public bool UseItem(Item item)
     {
-        if (null == m_Target)
-        {
-            Debug.Log($"{name}의 목표가 없음");
-            return false;
-        }
         if (m_CurrentStatus.Cost < item.m_CurrentStatus.Cost)
         {
             Debug.Log($"{name}의 코스트가 없음");
             return false;
         }
-        EntityEventHandler.Invoke(LogicEventType.OnE_AttackEvent);
+        Debug.Log($"{name}가 {Target.name}을 {item.name}으로 공격");
+        item.ActiveItem();
         //m_Target?.HitDamage(this, item);
         
         return true;
@@ -109,7 +105,6 @@ public abstract class Entity : MonoBehaviour
     {
         if (null != p_Attacker)
             Debug.Log($"{p_Attacker.name} 이 {name} 을 {p_Damage} 데미지");
-
         int damage = p_Damage;
         if (!p_IgoneArmor&&m_CurrentStatus.Armor > 0)
         {

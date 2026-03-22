@@ -78,15 +78,15 @@ public class Player : Entity
         }
         if(null != slot && slot.IsInItem)
         {
-            ItemUI now = slot.Item;
-            if (now.Data.IsCanUse())
+            Item now = slot.Item;
+            if (now.IsCanUse())
             {
-                int val = now.Data.m_CurrentStatus.Cost;
+                int val = now.m_CurrentStatus.Cost;
                 EntityEventHandler.GetEvent(LogicEventType.OnE_AttackEvent, "StaminaChangeUIEvent")
                     .SetArgs(val);
                 m_CurrentStatus.Cost -= val;
-
-                Attack(now.Data);
+                Attack();
+                UseItem(now);
             }
 
         }

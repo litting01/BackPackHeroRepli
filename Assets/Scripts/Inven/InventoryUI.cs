@@ -49,7 +49,8 @@ public class InventoryUI : MonoBehaviour
     string SlotGridStr { get { return Player.m_InvenGridStr; } }
 
     //현재 잡고있는 아이템
-    public ItemUI m_HoldItem = null;
+    //public ItemUI m_HoldItem = null;
+    public Item m_HoldItem = null;
     public Transform m_ItemTran;
     
     //임시
@@ -64,10 +65,10 @@ public class InventoryUI : MonoBehaviour
         GeneratSlot();
         foreach (var item in Player.Inven)
         {
-            ItemUI now = ItemGenerator.Get(Player,item);
+            Item now = ItemGenerator.Get(Player,item);
             now.transform.SetParent(m_ItemTran, true);
             now.transform.position = RanItemPos;
-            ItemSlot slot = GetSlot(now.Data.m_SlotIndex);
+            ItemSlot slot = GetSlot(now.m_SlotIndex);
             slot?.InputItem(now);
         }
     }
@@ -78,11 +79,11 @@ public class InventoryUI : MonoBehaviour
     }
     public void RemoveNoneInstallItem()
     {
-        foreach(var element in transform.GetComponentsInChildren<ItemUI>())
+        foreach(var element in transform.GetComponentsInChildren<Item>())
         {
             if (element.m_IsInstall)
                 continue;
-            element.ReleaseItem();
+            ItemGenerator.Release(element);
         }
     }
 

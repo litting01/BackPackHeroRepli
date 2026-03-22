@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Xml.Linq;
 using UnityEditorInternal.Profiling.Memory.Experimental;
 using UnityEngine;
-using UnityEngine.Pool;
 
 public class ItemGenerator : MonoBehaviour
 {
@@ -15,7 +14,7 @@ public class ItemGenerator : MonoBehaviour
         if(null == instance)
         {
             instance = this;
-            m_ItemPool = new Stack<ItemUI>(m_PoolMaxCount);
+            m_ItemPool = new Stack<GameObject>(m_PoolMaxCount);
         }
     }
 
@@ -23,7 +22,7 @@ public class ItemGenerator : MonoBehaviour
     public Transform m_PoolTran;
     public int m_PoolMaxCount = 10;
 
-    private Stack<ItemUI> m_ItemPool = null;
+    private Stack<GameObject> m_ItemPool = null;
     public List<EntityEditorInvenItem> m_DebugSpawnData;
 
     [ContextMenu("아이템 생성")]
@@ -31,7 +30,7 @@ public class ItemGenerator : MonoBehaviour
     {
         foreach(var element in m_DebugSpawnData)
         {
-            ItemUI temp = Get(BattleManager.Current.Player, element);
+            Item temp = Get(BattleManager.Current.Player, element);
             temp.transform.SetParent(InventoryUI.Current.transform);
             temp.ResetInstall();
         }
@@ -39,48 +38,52 @@ public class ItemGenerator : MonoBehaviour
     [ContextMenu("아이템 삭제")]
     public void RemoveItem()
     {
-        ItemUI temp = FindAnyObjectByType<ItemUI>();
+        Item temp = FindAnyObjectByType<Item>();
         if(null != temp)
             Release(temp); 
     }
 
-    public static ItemUI Get(Entity p_En ,EntityEditorInvenItem p_Data)
+    public static Item Get(Entity p_En ,EntityEditorInvenItem p_Data)
     {
-        return Current.InGetItemUI(p_En, p_Data);
+        return Current.InGetItem(p_En, p_Data);
     }
-    private ItemUI InGetItemUI(Entity p_En, EntityEditorInvenItem p_Data)
+    private Item InGetItem(Entity p_En, EntityEditorInvenItem p_Data)
     {
-        ItemUI temp = null;
+        GameObject obj = null;
+        Item temp = null;
 
         if (m_ItemPool.Count > 0)
         {
-            temp = m_ItemPool.Pop();
-            temp.Data.InitItem(p_Data, p_En);
-            temp.Data = temp.Data;
+            obj = m_ItemPool.Pop();
+            Type t = Type.GetType(p_Data.Data.name);
+            temp = (Item)obj.AddComponent(t);
+            temp?.InitItem(p_Data, p_En);
         }
         else
-            temp = CreateItemUI(p_En, p_Data);
+            temp = CreateItem(p_En, p_Data);
         if (null != temp)
-            OnGetItemUI(temp, p_En, p_Data);
+            OnGetItem(temp, p_En, p_Data);
         return temp;
     }
 
-    public static void Release(ItemUI p_Data)
+    public static void Release(Item p_Item)
     {
-        Current.InRelease(p_Data);
+        Current.InRelease(p_Item);
     }
-    private void InRelease(ItemUI p_Data)
+    private void InRelease(Item p_Item)
     {
+        p_Item.ReleaseItem();
+        GameObject.Destroy(p_Item);
         if(m_ItemPool.Count >= m_PoolMaxCount)
         {
-            GameObject.Destroy(p_Data.gameObject);
+            GameObject.Destroy(p_Item.gameObject);
             return;
         }
-        p_Data.Data = null;
-        OnReleaseItemUI(p_Data);
+        OnReleaseItem(p_Item);
+        //p_Data.Data = null;
     }
 
-    private ItemUI CreateItemUI(Entity p_En, EntityEditorInvenItem p_Data)
+    private Item CreateItem(Entity p_En, EntityEditorInvenItem p_Data)
     {
         Type t = Type.GetType(p_Data.Data.name);
         if (t == null)
@@ -89,30 +92,30 @@ public class ItemGenerator : MonoBehaviour
             return null;
         }
         GameObject clone = GameObject.Instantiate(m_ItemUIPrefaps);
-        Item item = (Item)Activator.CreateInstance(t);
-        item.InitItem(p_Data, p_En);
+        Item item = (Item)clone.AddComponent(t);
+        item?.InitItem(p_Data, p_En);
 
-        ItemUI itemUI = clone.GetComponent<ItemUI>();
-        itemUI.Data = item;
-        return itemUI;
+        return item;
     }
 
-    private void OnGetItemUI(ItemUI p_Item, Entity p_En, EntityEditorInvenItem p_Data)
+    private void OnGetItem(Item p_Item, Entity p_En, EntityEditorInvenItem p_Data)
     {
         p_Item.gameObject.SetActive(true);
         p_Item.transform.SetParent(null);
     }
-    private void OnReleaseItemUI(ItemUI p_Item)
+    private void OnReleaseItem(Item p_Item)
     {
         p_Item.gameObject.SetActive(false);
         p_Item.transform.SetParent(m_PoolTran,false);
         p_Item.transform.localPosition = Vector3.zero;
-        m_ItemPool.Push(p_Item);
+        p_Item.name = m_PoolTran.childCount.ToString();
+
+        m_ItemPool.Push(p_Item.gameObject);
     }
 }
 public static class ItemGeneratorExtensions
 {
-    public static void ReleaseItem(this ItemUI p_Data)
+    public static void ReleaseItem(this Item p_Data)
     {
         ItemGenerator.Release(p_Data);
     }
